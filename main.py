@@ -17,12 +17,10 @@ for i in range(8):
         if i == 6:
             board[i, j] = 1
 
-
 def check_piece_owner(x):
     if x == 1 or x == 3 or x == 3.5 or x == 5 or x == 9 or x == 500:
         return True  # White
     return False  # Black
-
 
 def white_score(board):
     score = 0
@@ -32,7 +30,6 @@ def white_score(board):
                 score = score + board[i, j]
     return score
 
-
 def black_score(board):
     score = 0
     for i in range(8):
@@ -41,6 +38,105 @@ def black_score(board):
                 score = score + board[i, j]
     return score / 2
 
+# castling rights
+white_king_has_moved = False
+black_king_has_moved = False
+white_kingside_rook_has_moved = False
+white_queenside_rook_has_moved = False
+black_kingside_rook_has_moved = False
+black_queenside_rook_has_moved = False
+
+def is_square_attacked_by_black(board, x, y):
+    # check if square (x,y) is attacked by any black piece
+    # check for pawn attacks
+    if x > 0:
+        if y > 0:
+            if board[x - 1, y - 1] == 2:
+                return True
+        if y < 7:
+            if board[x - 1, y + 1] == 2:
+                return True
+    # check for knight attacks
+    for dx, dy in [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]:
+        if x + dx >= 0 and x + dx < 8 and y + dy >= 0 and y + dy < 8:
+            if board[x + dx, y + dy] == 6:
+                return True
+    # check for bishop/queen attacks
+    for dx, dy in [[-1, -1], [-1, 1], [1, -1], [1, 1]]:
+        for k in range(1, 8):
+            if x + k * dx >= 0 and x + k * dx < 8 and y + k * dy >= 0 and y + k * dy < 8:
+                if board[x + k * dx, y + k * dy] == 0:
+                    continue
+                elif board[x + k * dx, y + k * dy] == 7 or board[x + k * dx, y + k * dy] == 18:
+                    return True
+                else:
+                    break
+            else:
+                break
+    # check for rook/queen attacks
+    for dx, dy in [[-1, 0], [1, 0], [0, -1], [0, 1]]:
+        for k in range(1, 8):
+            if x + k * dx >= 0 and x + k * dx < 8 and y + k * dy >= 0 and y + k * dy < 8:
+                if board[x + k * dx, y + k * dy] == 0:
+                    continue
+                elif board[x + k * dx, y + k * dy] == 10 or board[x + k * dx, y + k * dy] == 18:
+                    return True
+                else:
+                    break
+            else:
+                break
+    # check for king attacks
+    for dx, dy in [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]:
+        if x + dx >= 0 and x + dx < 8 and y + dy >= 0 and y + dy < 8:
+            if board[x + dx, y + dy] == 1000:
+                return True
+    return False
+
+def is_square_attacked_by_white(board, x, y):
+    # check if square (x,y) is attacked by any white piece
+    # check for pawn attacks
+    if x < 7:
+        if y > 0:
+            if board[x + 1, y - 1] == 1:
+                return True
+        if y < 7:
+            if board[x + 1, y + 1] == 1:
+                return True
+    # check for knight attacks
+    for dx, dy in [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]:
+        if x + dx >= 0 and x + dx < 8 and y + dy >= 0 and y + dy < 8:
+            if board[x + dx, y + dy] == 3:
+                return True
+    # check for bishop/queen attacks
+    for dx, dy in [[-1, -1], [-1, 1], [1, -1], [1, 1]]:
+        for k in range(1, 8):
+            if x + k * dx >= 0 and x + k * dx < 8 and y + k * dy >= 0 and y + k * dy < 8:
+                if board[x + k * dx, y + k * dy] == 0:
+                    continue
+                elif board[x + k * dx, y + k * dy] == 3.5 or board[x + k * dx, y + k * dy] == 9:
+                    return True
+                else:
+                    break
+            else:
+                break
+    # check for rook/queen attacks
+    for dx, dy in [[-1, 0], [1, 0], [0, -1], [0, 1]]:
+        for k in range(1, 8):
+            if x + k * dx >= 0 and x + k * dx < 8 and y + k * dy >= 0 and y + k * dy < 8:
+                if board[x + k * dx, y + k * dy] == 0:
+                    continue
+                elif board[x + k * dx, y + k * dy] == 5 or board[x + k * dx, y + k * dy] == 9:
+                    return True
+                else:
+                    break
+            else:
+                break
+    # check for king attacks
+    for dx, dy in [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]:
+        if x + dx >= 0 and x + dx < 8 and y + dy >= 0 and y + dy < 8:
+            if board[x + dx, y + dy] == 500:
+                return True
+    return False
 
 def generate_white_moves(board):
     move = np.zeros((8, 8))
@@ -181,6 +277,28 @@ def generate_white_moves(board):
                             move[i+x,j+y] = 500 - board[i+x,j+y]
                             moves.append(move)
                             move = np.zeros((8, 8))
+            # castling moves
+            if board[i, j] == 500:
+                # kingside castling
+                if not white_king_has_moved and not white_kingside_rook_has_moved:
+                    if board[7, 5] == 0 and board[7, 6] == 0 and board[7, 7] == 5:
+                        if not is_square_attacked_by_black(board, 7, 4) and not is_square_attacked_by_black(board, 7, 5) and not is_square_attacked_by_black(board, 7, 6):
+                            move[i, j] = -500
+                            move[7, 6] = 500
+                            move[7, 7] = -5
+                            move[7, 5] = 5
+                            moves.append(move)
+                            move = np.zeros((8, 8))
+                # queenside castling
+                if not white_king_has_moved and not white_queenside_rook_has_moved:
+                    if board[7, 1] == 0 and board[7, 2] == 0 and board[7, 3] == 0 and board[7, 0] == 5:
+                        if not is_square_attacked_by_black(board, 7, 4) and not is_square_attacked_by_black(board, 7, 3) and not is_square_attacked_by_black(board, 7, 2):
+                            move[i, j] = -500
+                            move[7, 2] = 500
+                            move[7, 0] = -5
+                            move[7, 3] = 5
+                            moves.append(move)
+                            move = np.zeros((8, 8))
     return moves
 
 def generate_black_moves(board):
@@ -254,18 +372,18 @@ def generate_black_moves(board):
                             moves.append(move)
                             move = np.zeros((8, 8))
             # bishop moves
-            if board[i,j] == 6.5:
+            if board[i,j] == 7:
                 for x,y in [[-1,-1],[-1,1],[1,-1],[1,1]]:
                     for k in range(1,8):
                         if i+k*x >= 0 and i+k*x < 8 and j+k*y >= 0 and j+k*y < 8:
                             if board[i+k*x,j+k*y] == 0:
-                                move[i,j] = -6.5
-                                move[i+k*x,j+k*y] = 6.5
+                                move[i,j] = -7
+                                move[i+k*x,j+k*y] = 7
                                 moves.append(move)
                                 move = np.zeros((8, 8))
                             elif check_piece_owner(board[i+k*x,j+k*y]):
-                                move[i,j] = -6.5
-                                move[i+k*x,j+k*y] = 6.5 - board[i+k*x,j+k*y]
+                                move[i,j] = -7
+                                move[i+k*x,j+k*y] = 7 - board[i+k*x,j+k*y]
                                 moves.append(move)
                                 move = np.zeros((8, 8))
                                 break # can't move past capture
@@ -322,7 +440,31 @@ def generate_black_moves(board):
                             move[i+x,j+y] = 1000 - board[i+x,j+y]
                             moves.append(move)
                             move = np.zeros((8, 8))
+            # castling moves
+            if board[i, j] == 1000:
+                # kingside castling
+                if not black_king_has_moved and not black_kingside_rook_has_moved and board[0, 7] == 10:
+                    if board[0, 5] == 0 and board[0, 6] == 0:
+                        if not is_square_attacked_by_white(board, 0, 4) and not is_square_attacked_by_white(board, 0, 5) and not is_square_attacked_by_white(board, 0, 6):
+                            move[i, j] = -1000
+                            move[0, 6] = 1000
+                            move[0, 7] = -10
+                            move[0, 5] = 10
+                            moves.append(move)
+                            move = np.zeros((8, 8))
+                # queenside castling
+                if not black_king_has_moved and not black_queenside_rook_has_moved and board[0, 0] == 10:
+                    if board[0, 1] == 0 and board[0, 2] == 0 and board[0, 3] == 0:
+                        if not is_square_attacked_by_white(board, 0, 4) and not is_square_attacked_by_white(board, 0, 3) and not is_square_attacked_by_white(board, 0, 2):
+                            move[i, j] = -1000
+                            move[0, 2] = 1000
+                            move[0, 0] = -10
+                            move[0, 3] = 10
+                            moves.append(move)
+                            move = np.zeros((8, 8))
     return moves
+
+# note to self: will have to trigger boleans for castling rights when king or rook moves. also will have to reset them when undoing moves
 
 print(board)
 print(generate_black_moves(board))
