@@ -470,8 +470,7 @@ def generate_black_moves(board):
 # note to self: will have to trigger boleans for castling rights when king or rook moves. also will have to reset them when undoing moves
 
 # minimax algorithm : takes in a board state and returns the best move for the player to move.
-def minimax(board, depth, white_to_move = True):
-    best_move = None
+def minimax(board, depth, white_to_move = True, best_move = np.zeros((8, 8))):
     # base case: if depth is 0 or game is over, return evaluation of board
     if depth == 0 or evaluate_board(board) > 460 or evaluate_board(board) < -460:
         return evaluate_board(board), best_move
@@ -481,11 +480,10 @@ def minimax(board, depth, white_to_move = True):
         max_eval = float('-inf')
         for move in generate_white_moves(board):
             new_board = board + move
-            eval, _ = minimax(new_board, depth - 1, white_to_move)
+            eval, _ = minimax(new_board, depth - 1, white_to_move, best_move)
             if eval > max_eval:
                 max_eval = eval
                 best_move = move
-        print("best_move: ", best_move)
         return max_eval, best_move
     else:
         # next player is white, so set white_to_move to True for next recursion
@@ -493,23 +491,20 @@ def minimax(board, depth, white_to_move = True):
         min_eval = float('inf')
         for move in generate_black_moves(board):
             new_board = board + move
-            eval, _ = minimax(new_board, depth - 1, white_to_move)
+            eval, _ = minimax(new_board, depth - 1, white_to_move, best_move)
             if eval < min_eval:
                 min_eval = eval
                 best_move = move
-        print("best_move: ", best_move)
         return min_eval, best_move
     
-# mate in 3 test case (white to move):
+# mate in 2 test case (white to move):
 test_board = np.array([[0, 0, 0, 0, 0, 0, 0, 0],
                        [0, 0, 0, 0, 0, 0, 0, 0],
-                       [0, 0, 0, 0, 0, 0, 0, 1000],
-                       [9, 0, 0, 0, 0, 0, 0, 0],
-                       [0, 9, 0, 0, 0, 0, 0, 0],
                        [0, 0, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 0, 0, 500, 0, 0, 0],
                        [0, 0, 0, 0, 0, 0, 0, 0],
-                       [0, 0, 0, 0, 500, 0, 0, 0]])
+                       [0, 5, 0, 0, 0, 0, 0, 0],
+                       [5, 0, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 0, 0, 0, 0, 1000, 0]])
 
-print(generate_white_moves(test_board))
-
-# print(minimax(test_board, 4, True))
+print(minimax(test_board, 3, True))
