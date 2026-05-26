@@ -497,6 +497,39 @@ def minimax(board, depth, white_to_move = True, best_move = np.zeros((8, 8))):
                 best_move = move
         return min_eval, best_move
     
+def minimax_alpha_beta(board, depth, alpha, beta, white_to_move = True, best_move = np.zeros((8, 8))):
+    # base case: if depth is 0 or game is over, return evaluation of board
+    if depth == 0 or evaluate_board(board) > 460 or evaluate_board(board) < -460:
+        return evaluate_board(board), best_move
+    if white_to_move:
+        # next player is black, so set white_to_move to False for next recursion
+        white_to_move = False
+        max_eval = float('-inf')
+        for move in generate_white_moves(board):
+            new_board = board + move
+            eval, _ = minimax_alpha_beta(new_board, depth - 1, alpha, beta, white_to_move, best_move)
+            if eval > max_eval:
+                max_eval = eval
+                best_move = move
+            alpha = max(alpha, eval)
+            if beta <= alpha:
+                break # beta cut-off
+        return max_eval, best_move
+    else:
+        # next player is white, so set white_to_move to True for next recursion
+        white_to_move = True
+        min_eval = float('inf')
+        for move in generate_black_moves(board):
+            new_board = board + move
+            eval, _ = minimax_alpha_beta(new_board, depth - 1, alpha, beta, white_to_move, best_move)
+            if eval < min_eval:
+                min_eval = eval
+                best_move = move
+            beta = min(beta, eval)
+            if beta <= alpha:
+                break # alpha cut-off
+        return min_eval, best_move
+
 # mate in 2 test case (white to move):
 test_board = np.array([[0, 0, 0, 0, 0, 0, 0, 0],
                        [0, 0, 0, 0, 0, 0, 0, 0],
@@ -507,4 +540,4 @@ test_board = np.array([[0, 0, 0, 0, 0, 0, 0, 0],
                        [5, 0, 0, 0, 0, 0, 0, 0],
                        [0, 0, 0, 0, 0, 0, 1000, 0]])
 
-print(minimax(test_board, 3, True))
+print(minimax_alpha_beta(test_board, 3, float('-inf'), float('inf'), True))
